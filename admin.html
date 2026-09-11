@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>METALUX | Administración</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--navy:#0b1f33;--blue:#145da0;--light:#f4f7fa;--line:#dce4eb;--green:#17834b;--red:#c0392b}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--light);color:var(--navy)}
+.hidden{display:none!important}.container{max-width:1180px;margin:auto;padding:24px}
+header{background:var(--navy);color:#fff}.head{display:flex;justify-content:space-between;align-items:center;gap:15px;max-width:1180px;margin:auto;padding:18px 24px}.logo{font-weight:950;letter-spacing:1px}.logo span{opacity:.65}.head-actions{display:flex;gap:8px}
+.btn{border:0;border-radius:10px;padding:11px 15px;font-weight:850;cursor:pointer}.btn:disabled{opacity:.55;cursor:not-allowed}.dark{background:var(--navy);color:#fff}.primary{background:var(--blue);color:#fff}.light{background:#eef2f5;color:var(--navy)}.danger{background:#feeceb;color:var(--red)}
+.login{max-width:470px;margin:60px auto}.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 8px 30px #0b1f3310}.login h1{margin-top:0}.muted{color:#687887;font-size:14px}.msg{margin-top:12px;font-size:14px}.error{color:var(--red)}.ok{color:var(--green)}
+label{display:block;font-weight:800;font-size:13px;margin:0 0 7px}input,textarea,select{width:100%;border:1px solid #cfd9e1;border-radius:10px;padding:11px 12px;font:inherit;background:#fff;color:var(--navy)}textarea{min-height:100px;resize:vertical}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.full{grid-column:1/-1}.form-actions{display:flex;gap:10px;margin-top:18px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.top h1{margin:0 0 5px}.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}.products{display:grid;gap:12px;margin-top:18px}.product{display:grid;grid-template-columns:72px 1fr auto;gap:12px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:10px}.thumb{width:72px;height:72px;border-radius:10px;overflow:hidden;background:#eef2f5}.thumb img{width:100%;height:100%;object-fit:cover}.product-name{font-weight:900}.price{font-weight:900;margin-top:3px}.meta{font-size:12px;color:#71808e;margin-top:4px}.actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.badge{display:inline-block;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:900;margin-top:5px}.visible{background:#e7f7ef;color:var(--green)}.hidden-badge{background:#f1f3f5;color:#687887}.sold{background:#fff0ee;color:var(--red)}
+.upload{border:1px dashed #aebdca;border-radius:12px;padding:14px;background:#fafcfd}.preview{margin-top:10px;width:120px;height:90px;border-radius:10px;overflow:hidden;background:#eef2f5}.preview img{width:100%;height:100%;object-fit:cover}.note{font-size:12px;color:#748391;margin-top:7px}.status{padding:12px;border-radius:10px;background:#eaf2f8;margin-bottom:15px;font-size:13px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.full{grid-column:auto}.top{align-items:flex-start;flex-direction:column}.product{grid-template-columns:58px 1fr}.thumb{width:58px;height:58px}.actions{grid-column:1/-1;justify-content:stretch}.actions .btn{flex:1}.head{padding:15px}.container{padding:15px}.login{margin:25px auto}}
+</style>
+</head>
+<body>
+<header><div class="head"><div class="logo">METALUX<span>_PAGE</span> · ADMIN</div><div class="head-actions"><a class="btn light" href="./index.html">Ver sitio</a><button id="logoutBtn" class="btn light hidden">Cerrar sesión</button></div></div></header>
+
+<section id="loginView" class="container login">
+  <div class="card">
+    <h1>Acceso de administración</h1>
+    <p class="muted">Ingresa con la cuenta autorizada para gestionar el catálogo.</p>
+    <form id="loginForm">
+      <label for="email">Correo</label><input id="email" type="email" required autocomplete="username">
+      <label for="password" style="margin-top:13px">Contraseña</label><input id="password" type="password" required autocomplete="current-password">
+      <button id="loginBtn" class="btn primary" style="width:100%;margin-top:16px">Entrar al panel →</button>
+      <div id="loginMsg" class="msg"></div>
+    </form>
+  </div>
+</section>
+
+<section id="appView" class="hidden">
+<main class="container">
+  <div class="top"><div><h1>Gestionar catálogo</h1><div class="muted">Agrega productos, cambia precios, imágenes y marca productos como agotados.</div></div></div>
+  <div id="status" class="status hidden"></div>
+  <div class="grid">
+    <section class="card">
+      <h2 id="formTitle">Nuevo producto</h2>
+      <p class="muted">La foto puede elegirse directamente desde la galería del celular o desde los archivos de la computadora.</p>
+      <form id="productForm">
+        <input id="productId" type="hidden">
+        <div class="form-grid">
+          <div><label for="name">Nombre</label><input id="name" required></div>
+          <div><label for="price">Precio (S/)</label><input id="price" type="number" step="0.01" min="0" required></div>
+          <div><label for="category">Categoría</label><select id="category"><option value="cocina">Cocina</option><option value="decoracion">Decoración</option><option value="hogar">Hogar</option></select></div>
+          <div><label for="active">Publicación</label><select id="active"><option value="true">Publicado</option><option value="false">Oculto</option></select></div>
+          <div><label for="available">Disponibilidad</label><select id="available"><option value="true">Disponible</option><option value="false">Agotado</option></select></div>
+          <div class="full"><label for="description">Descripción</label><textarea id="description" required></textarea></div>
+          <div class="full upload"><label for="image_file">Foto del producto</label><input id="image_file" type="file" accept="image/*"><div class="note">En celular se abrirá la opción de elegir una foto de la galería (o tomar una foto, según el dispositivo).</div><div id="preview" class="preview hidden"><img id="previewImg" alt="Vista previa"></div><div id="imageNote" class="note"></div></div>
+        </div>
+        <div class="form-actions"><button class="btn primary" type="submit" id="saveBtn">Guardar producto</button><button class="btn light" type="button" id="cancelEdit">Limpiar</button></div>
+        <div id="formMsg" class="msg"></div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Productos actuales</h2><div class="muted">Aquí aparecen los productos guardados en Supabase. Puedes editar precio, foto, publicación o disponibilidad.</div>
+      <div id="products" class="products"><div class="muted">Cargando...</div></div>
+    </section>
+  </div>
+</main></section>
+
+<script>
+const SUPABASE_URL="https://rmkcwfzwizrhladkrhdo.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY="sb_publishable_3xwqyA2_E8mKFojGla2kQQ_Uv7JQtQ8";
+const ADMIN_UID="fb150376-4a6e-434e-a3fd-dea129d8c734";
+const BUCKET="product-images";
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+const $=id=>document.getElementById(id); let rows=[]; let currentImageUrl="";
+function msg(el,text,type=""){el.textContent=text;el.className="msg "+type}
+function status(text){$("status").textContent=text;$("status").classList.remove("hidden");setTimeout(()=>$("status").classList.add("hidden"),2800)}
+function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]))}
+function cat(v){return ({cocina:"Cocina",decoracion:"Decoración",hogar:"Hogar"})[String(v||"").toLowerCase()]||v||"Producto"}
+function resetForm(){$("productForm").reset();$("productId").value="";$("formTitle").textContent="Nuevo producto";$("active").value="true";$("available").value="true";$("category").value="cocina";currentImageUrl="";$("preview").classList.add("hidden");$("imageNote").textContent="";msg($("formMsg"),"")}
+function render(){
+  $("products").innerHTML="";
+  if(!rows.length){$("products").innerHTML='<div class="muted">No se encontraron productos en la tabla.</div>';return}
+  rows.forEach(p=>{const el=document.createElement("div");el.className="product";const img=p.image_url||"./Imagenes/Logo.png";el.innerHTML=`<div class="thumb"><img src="${esc(img)}" alt=""></div><div><div class="product-name">${esc(p.name)}</div><div class="price">S/ ${Number(p.price||0).toFixed(2)}</div><div class="meta">${esc(cat(p.category))}</div><span class="badge ${p.active?'visible':'hidden-badge'}">${p.active?'Publicado':'Oculto'}</span> <span class="badge ${p.available===false?'sold':'visible'}">${p.available===false?'Agotado':'Disponible'}</span></div><div class="actions"><button class="btn dark edit" data-id="${esc(p.id)}">Editar</button><button class="btn danger del" data-id="${esc(p.id)}">Eliminar</button></div>`;$("products").appendChild(el)});
+  document.querySelectorAll(".edit").forEach(b=>b.onclick=()=>edit(b.dataset.id));document.querySelectorAll(".del").forEach(b=>b.onclick=()=>del(b.dataset.id));
+}
+async function load(){msg($("formMsg"),"Cargando productos...");const {data,error}=await sb.from("products").select("id,name,price,description,image_url,category,active,available").order("id",{ascending:true});if(error){msg($("formMsg"),"No se pudieron cargar los productos: "+error.message,"error");$("products").innerHTML='<div class="msg error">Revisa las políticas RLS de la tabla products.</div>';return}rows=data||[];render();msg($("formMsg"),"")}
+function edit(id){const p=rows.find(x=>String(x.id)===String(id));if(!p)return;$("productId").value=p.id;$("name").value=p.name||"";$("price").value=p.price??"";$("category").value=String(p.category||"cocina").toLowerCase();$("active").value=String(p.active!==false);$("available").value=String(p.available!==false);$("description").value=p.description||"";currentImageUrl=p.image_url||"";$("image_file").value="";if(currentImageUrl){$("previewImg").src=currentImageUrl;$("preview").classList.remove("hidden");$("imageNote").textContent="Imagen actual. Selecciona otra para reemplazarla."}$("formTitle").textContent="Editar producto";window.scrollTo({top:0,behavior:"smooth"})}
+async function del(id){const p=rows.find(x=>String(x.id)===String(id));if(!p||!confirm(`¿Eliminar "${p.name}"?`))return;const {error}=await sb.from("products").delete().eq("id",id);if(error){msg($("formMsg"),"No se pudo eliminar: "+error.message,"error");return}status("Producto eliminado.");resetForm();load()}
+$("image_file").addEventListener("change",e=>{const file=e.target.files[0];if(!file)return;if(!file.type.startsWith("image/")){msg($("formMsg"),"Selecciona una imagen.","error");e.target.value="";return}$("previewImg").src=URL.createObjectURL(file);$("preview").classList.remove("hidden");$("imageNote").textContent=file.name+" · "+Math.round(file.size/1024)+" KB"});
+async function uploadImage(file){const ext=(file.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"");const path=`${crypto.randomUUID()}.${ext}`;const {error}=await sb.storage.from(BUCKET).upload(path,file,{cacheControl:"3600",upsert:false,contentType:file.type});if(error)throw error;const {data}=sb.storage.from(BUCKET).getPublicUrl(path);return data.publicUrl}
+$("loginForm").addEventListener("submit",async e=>{e.preventDefault();$("loginBtn").disabled=true;msg($("loginMsg"),"");const {data,error}=await sb.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});if(error||!data.user){msg($("loginMsg"),"No se pudo iniciar sesión. Revisa correo y contraseña.","error");$("loginBtn").disabled=false;return}if(data.user.id!==ADMIN_UID){await sb.auth.signOut();msg($("loginMsg"),"Esta cuenta no está autorizada.","error");$("loginBtn").disabled=false;return}$("loginView").classList.add("hidden");$("appView").classList.remove("hidden");$("logoutBtn").classList.remove("hidden");$("loginBtn").disabled=false;await load()});
+$("logoutBtn").onclick=async()=>{await sb.auth.signOut();location.reload()};$("cancelEdit").onclick=resetForm;
+$("productForm").addEventListener("submit",async e=>{e.preventDefault();const id=$("productId").value;const file=$("image_file").files[0];const payload={name:$("name").value.trim(),price:Number($("price").value),description:$("description").value.trim(),category:$("category").value,active:$("active").value==="true",available:$("available").value==="true",image_url:currentImageUrl};if(!payload.name||!Number.isFinite(payload.price)||!payload.description){msg($("formMsg"),"Completa los campos obligatorios.","error");return}$("saveBtn").disabled=true;msg($("formMsg"),file?"Subiendo imagen y guardando...":"Guardando...");try{if(file)payload.image_url=await uploadImage(file);const result=id?await sb.from("products").update(payload).eq("id",id):await sb.from("products").insert(payload);if(result.error)throw result.error;status(id?"Producto actualizado y publicado correctamente.":"Producto agregado y publicado correctamente.");resetForm();await load()}catch(err){msg($("formMsg"),"No se pudo guardar: "+err.message,"error")}finally{$("saveBtn").disabled=false}});
+(async()=>{const {data}=await sb.auth.getSession();if(data.session?.user?.id===ADMIN_UID){$("loginView").classList.add("hidden");$("appView").classList.remove("hidden");$("logoutBtn").classList.remove("hidden");await load()}else if(data.session)await sb.auth.signOut()})();
+</script>
+</body></html>
